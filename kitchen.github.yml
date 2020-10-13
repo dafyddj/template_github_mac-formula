@@ -1,0 +1,8 @@
+---
+driver:
+  name: exec
+
+platforms:
+  - name: macos
+    provisioner:
+      salt_call_command: sudo /opt/salt/bin/salt-call

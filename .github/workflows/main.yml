@@ -22,6 +22,30 @@ jobs:
       - uses: pre-commit/action@v2.0.0
         with:
           extra_args: --verbose --all-files
+  kitchen:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+      - run: |
+          wget -nv https://repo.saltstack.com/osx/salt-3001.1-py3-x86_64.pkg
+          sudo installer -pkg salt-3001.1-py3-x86_64.pkg -target /
+      - run: |
+          /opt/salt/bin/salt-call --versions
+      - run: gem install bundler --quiet --no-document
+      - name: Bundle install
+        run: |
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
+      - run: bundle exec kitchen test
+        env:
+          KITCHEN_LOCAL_YAML: kitchen.github.yml
+          CHEF_LICENSE: accept-no-persist
   release:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [commitlint, pre-commit]
